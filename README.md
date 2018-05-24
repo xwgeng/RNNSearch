@@ -43,6 +43,10 @@ python translate.py \
 --name RNNSearch.best.pt \
 --cuda 
 ```
+The evaluation metric for Chinese-English we use is case-insensitive BLEU. We use the `muti-bleu.perl` script from [Moses](https://github.com/moses-smt/mosesdecoder) to compute the BLEU:
+```
+perl scripts/multi-bleu.perl -lc /path/to/nist03.en < nist03.translated
+```
 
 ### Acknowledgements
 
