@@ -43,3 +43,8 @@ python translate.py \
 --name RNNSearch.best.pt
 --cuda \
 ```
+
+### Acknowledgements
+
+My implementation utilizes code from the following:
+* [DeepLearnXMU's ABD-NMT repo](https://github.com/DeepLearnXMU/ABD-NMT)
