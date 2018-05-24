@@ -36,7 +36,7 @@ python train.py \
 ```
 python translate.py \
 --src_vocab /path/to/cn.voc3.pkl --trg_vocab /path/to/en.voc3.pkl \
---test_src corpus/nist03/nist03.cn
+--test_src corpus/nist03/nist03.cn \
 --test_trg corpus/nist03/nist02.en0 corpus/nist03/nist03.en1 corpus/nist03/nist03.en2 corpus/nist03/nist03.en3 \
 --eval_script scripts/validate.sh \
 --model RNNSearch \
