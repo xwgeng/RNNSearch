@@ -40,7 +40,7 @@ python translate.py \
 --test_trg corpus/nist03/nist02.en0 corpus/nist03/nist03.en1 corpus/nist03/nist03.en2 corpus/nist03/nist03.en3 \
 --eval_script scripts/validate.sh \
 --model RNNSearch \
---name RNNSearch.best.pt
+--name RNNSearch.best.pt \
 --cuda 
 ```
 
