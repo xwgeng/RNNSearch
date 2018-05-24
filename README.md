@@ -44,7 +44,7 @@ python translate.py \
 ```
 The evaluation metric for Chinese-English we use is case-insensitive BLEU. We use the `muti-bleu.perl` script from [Moses](https://github.com/moses-smt/mosesdecoder) to compute the BLEU:
 ```
-perl scripts/multi-bleu.perl -lc /path/to/nist03.en < nist03.translated
+perl scripts/multi-bleu.perl -lc corpus/nist03/nist03.en < nist03.translated
 ```
 ### Acknowledgements
 My implementation utilizes code from the following:
