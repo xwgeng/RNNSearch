@@ -1,4 +1,4 @@
-An implemented attention-based neural machine translation using Pytorch
+An implemented attention-based neural machine translation
 =====================================================================
 
 ### Installation
@@ -9,8 +9,10 @@ The following packages are needed:
 ### Preparation
 To obtain vocabulary for training, run:
 ```
-python scripts/buildvocab.py --corpus /path/to/train.cn --output /path/to/cn.voc3.pkl --limit 30000 --groundhog
-python scripts/buildvocab.py --corpus /path/to/train.en --output /path/to/en.voc3.pkl --limit 30000 --groundhog
+python scripts/buildvocab.py --corpus /path/to/train.cn --output /path/to/cn.voc3.pkl \
+--limit 30000 --groundhog
+python scripts/buildvocab.py --corpus /path/to/train.en --output /path/to/en.voc3.pkl \
+--limit 30000 --groundhog
 ```
 
 ### Training
