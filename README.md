@@ -31,7 +31,6 @@ python train.py \
 --cuda \
 --info RMSprop-half_epoch 
 ```
-
 ### Evaluation
 ```
 python translate.py \
@@ -47,8 +46,6 @@ The evaluation metric for Chinese-English we use is case-insensitive BLEU. We us
 ```
 perl scripts/multi-bleu.perl -lc /path/to/nist03.en < nist03.translated
 ```
-
 ### Acknowledgements
-
 My implementation utilizes code from the following:
 * [DeepLearnXMU's ABD-NMT repo](https://github.com/DeepLearnXMU/ABD-NMT)
