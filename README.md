@@ -28,8 +28,8 @@ python train.py \
 --optim RMSprop \
 --batch_size 80 \
 --half_epoch \
---cuda
---info RMSprop-half_epoch \
+--cuda \
+--info RMSprop-half_epoch 
 ```
 
 ### Evaluation
@@ -41,7 +41,7 @@ python translate.py \
 --eval_script scripts/validate.sh \
 --model RNNSearch \
 --name RNNSearch.best.pt
---cuda \
+--cuda 
 ```
 
 ### Acknowledgements
