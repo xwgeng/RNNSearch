@@ -1,4 +1,4 @@
-An implemented attention-based neural machine translation
+An implementation of attention-based neural machine translation
 =====================================================================
 
 ### Installation
