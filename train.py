@@ -45,7 +45,7 @@ parser.add_argument('--nreadout', type=int, default=620, help='number of maxout 
 parser.add_argument('--enc_emb_dropout', type=float, default=0.3, help='dropout rate for encoder embedding')
 parser.add_argument('--dec_emb_dropout', type=float, default=0.3, help='dropout rate for decoder embedding')
 parser.add_argument('--enc_hid_dropout', type=float, default=0.3, help='dropout rate for encoder hidden state')
-parser.add_argument('--readout_dropout', type=float, default=0.3, help='dropout rate for encoder hidden state')
+parser.add_argument('--readout_dropout', type=float, default=0.3, help='dropout rate for readout layer')
 # optimization
 parser.add_argument('--optim', type=str, default='RMSprop', help='optimization algorihtim')
 parser.add_argument('--batch_size', type=int, default=80, help='input batch size for training')
