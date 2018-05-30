@@ -34,7 +34,7 @@ parser.add_argument('--valid_trg', type=str, nargs='+', help='references for val
 parser.add_argument('--vfreq', type=int, default=1500, help='frequency for validation')
 parser.add_argument('--eval_script', type=str, help='script for validation')
 # model
-parser.add_argument('--model', type=str, default='FMTNMT', help='the name of model')
+parser.add_argument('--model', type=str, help='the name of model')
 parser.add_argument('--name', type=str, default='', help='the name of checkpoint')
 parser.add_argument('--enc_ninp', type=int, default=620, help='size of source word embedding')
 parser.add_argument('--dec_ninp', type=int, default=620, help='size of target word embedding')
