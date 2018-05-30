@@ -21,7 +21,7 @@ from util import convert_data, invert_vocab, load_vocab, convert_str, sort_batch
 import model
 from nltk.translate.bleu_score import corpus_bleu, sentence_bleu, SmoothingFunction
 
-parser = argparse.ArgumentParser(description='Training Sequence-to-Sequence model')
+parser = argparse.ArgumentParser(description='Training Attention-based Neural Machine Translation Model')
 # data
 parser.add_argument('--src_vocab', type=str, help='source vocabulary')
 parser.add_argument('--trg_vocab', type=str, help='target vocabulary')
