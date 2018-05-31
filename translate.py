@@ -13,7 +13,7 @@ from util import convert_data, invert_vocab, load_vocab, convert_str
 import model
 from nltk.translate.bleu_score import corpus_bleu, SmoothingFunction
 
-parser = argparse.ArgumentParser(description='Testing Sequence-to-Sequence Model')
+parser = argparse.ArgumentParser(description='Testing Attention-based Neural Machine Translation Model')
 # data
 parser.add_argument('--src_vocab', type=str, help='source vocabulary')
 parser.add_argument('--trg_vocab', type=str, help='target vocabulary')
