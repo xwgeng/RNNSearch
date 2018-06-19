@@ -111,7 +111,7 @@ class Seq2Seq(nn.Module):
         for i in xrange(f_trg.size(1) - 1):
             output, hidden = self.decoder(self.dec_emb_dp(self.emb(f_trg[:, i])), hidden, src_mask.data, enc_context)
             loss += F.cross_entropy(self.affine(output), f_trg[:, i+1], reduce=False) * f_trg_mask[:, i+1].float()
-        w_loss = loss.sum() / f_trg_mask.data.sum()
+        w_loss = loss.sum() / f_trg_mask[:, 1:].data.sum()
         loss = loss.mean()
         return loss, w_loss
 
