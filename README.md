@@ -3,7 +3,7 @@ Attention-based Neural Machine Translation
 
 ### Installation
 The following packages are needed:
-* [Pytorch-0.4.0](https://github.com/pytorch/pytorch)
+* [Pytorch-0.4.0a0+967bceb](https://github.com/pytorch/pytorch)
 * NLTK
 
 ### Preparation
