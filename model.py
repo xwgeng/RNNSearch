@@ -22,12 +22,13 @@ class Encoder(nn.Module):
 
     def forward(self, input, mask):
         hidden = self.init_hidden(input.size(0))
-        self.bi_gru.flatten_parameters()
+        #self.bi_gru.flatten_parameters()
         input = self.enc_emb_dp(self.emb(input))
         length = mask.sum(1).tolist()
+        total_length = mask.size(1)
         input = torch.nn.utils.rnn.pack_padded_sequence(input, length, batch_first=True)
         output, hidden = self.bi_gru(input, hidden)
-        output = torch.nn.utils.rnn.pad_packed_sequence(output, batch_first=True)[0]
+        output = torch.nn.utils.rnn.pad_packed_sequence(output, batch_first=True, total_length=total_length)[0]
         output = self.enc_hid_dp(output)
         hidden = torch.cat([hidden[0], hidden[1]], dim=-1)
         return output, hidden
@@ -108,7 +109,7 @@ class RNNSearch(nn.Module):
             loss += F.cross_entropy(self.affine(output), f_trg[:, i+1], reduce=False) * f_trg_mask[:, i+1]
         w_loss = loss.sum() / f_trg_mask[:, 1:].sum()
         loss = loss.mean()
-        return loss, w_loss
+        return loss.unsqueeze(0), w_loss.unsqueeze(0)
 
     def beamsearch(self, src, src_mask, beam_size=10, normalize=False, max_len=None, min_len=None):
         max_len = src.size(1) * 3 if max_len is None else max_len
