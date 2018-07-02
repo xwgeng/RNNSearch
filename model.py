@@ -1,15 +1,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.autograd import Variable
-
-import numpy as np
 
 from beam import Beam
-
-from util import convert_str
-
-from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
 
 
 class Encoder(nn.Module):
@@ -23,8 +16,8 @@ class Encoder(nn.Module):
         self.enc_hid_dp = nn.Dropout(hid_dropout)
 
     def init_hidden(self, batch_size):
-        weight = next(self.parameters()).data
-        h0 = Variable(weight.new(2, batch_size, self.nhid).zero_())
+        weight = next(self.parameters())
+        h0 = weight.new_zeros(2, batch_size, self.nhid)
         return h0
 
     def forward(self, input, mask):
@@ -81,9 +74,9 @@ class VallinaDecoder(nn.Module):
         return output, hidden
 
 
-class Seq2Seq(nn.Module):
+class RNNSearch(nn.Module):
     def __init__(self, opt):
-        super(Seq2Seq, self).__init__()
+        super(RNNSearch, self).__init__()
         self.dec_nhid = opt.dec_nhid
         self.dec_sos = opt.dec_sos
         self.dec_eos = opt.dec_eos
@@ -98,20 +91,22 @@ class Seq2Seq(nn.Module):
         self.dec_emb_dp = nn.Dropout(opt.dec_emb_dropout)
 
     def forward(self, src, src_mask, f_trg, f_trg_mask, b_trg=None, b_trg_mask=None):
-        enc_context, _ = self.encoder(src, src_mask.data)
+        enc_context, _ = self.encoder(src, src_mask)
         enc_context = enc_context.contiguous()
 
         avg_enc_context = enc_context.sum(1)
-        enc_context_len = src_mask.data.long().sum(1).unsqueeze(-1).expand_as(avg_enc_context.data)
-        avg_enc_context = avg_enc_context / Variable(enc_context_len.float())
+        enc_context_len = src_mask.sum(1).unsqueeze(-1).expand_as(avg_enc_context)
+        avg_enc_context = avg_enc_context / enc_context_len
+
+        attn_mask = src_mask.byte()
 
         hidden = F.tanh(self.init_affine(avg_enc_context))
 
         loss = 0
         for i in xrange(f_trg.size(1) - 1):
-            output, hidden = self.decoder(self.dec_emb_dp(self.emb(f_trg[:, i])), hidden, src_mask.data, enc_context)
-            loss += F.cross_entropy(self.affine(output), f_trg[:, i+1], reduce=False) * f_trg_mask[:, i+1].float()
-        w_loss = loss.sum() / f_trg_mask[:, 1:].data.sum()
+            output, hidden = self.decoder(self.dec_emb_dp(self.emb(f_trg[:, i])), hidden, attn_mask, enc_context)
+            loss += F.cross_entropy(self.affine(output), f_trg[:, i+1], reduce=False) * f_trg_mask[:, i+1]
+        w_loss = loss.sum() / f_trg_mask[:, 1:].sum()
         loss = loss.mean()
         return loss, w_loss
 
@@ -119,12 +114,14 @@ class Seq2Seq(nn.Module):
         max_len = src.size(1) * 3 if max_len is None else max_len
         min_len = src.size(1) / 2 if min_len is None else min_len
 
-        enc_context, _ = self.encoder(src, src_mask.data)
+        enc_context, _ = self.encoder(src, src_mask)
         enc_context = enc_context.contiguous()
 
         avg_enc_context = enc_context.sum(1)
-        enc_context_len = src_mask.data.long().sum(1).unsqueeze(-1).expand_as(avg_enc_context.data)
-        avg_enc_context = avg_enc_context / Variable(enc_context_len.float())
+        enc_context_len = src_mask.sum(1).unsqueeze(-1).expand_as(avg_enc_context)
+        avg_enc_context = avg_enc_context / enc_context_len
+
+        attn_mask = src_mask.byte()
 
         hidden = F.tanh(self.init_affine(avg_enc_context))
 
@@ -138,9 +135,9 @@ class Seq2Seq(nn.Module):
         hyp_list = []
         for k in xrange(max_len):
             candidates = prev_beam.candidates
-            input = Variable(src.data.new(map(lambda cand: cand[-1], candidates)))
+            input = src.new_tensor(map(lambda cand: cand[-1], candidates))
             input = self.dec_emb_dp(self.emb(input))
-            output, hidden = self.decoder(input, hidden, src_mask.data, enc_context)
+            output, hidden = self.decoder(input, hidden, attn_mask, enc_context)
             log_prob = F.log_softmax(self.affine(output), dim=1)
             if k < min_len:
                 log_prob[:, self.dec_eos] = -float('inf')
@@ -149,14 +146,14 @@ class Seq2Seq(nn.Module):
                 log_prob[:, :] = -float('inf')
                 log_prob[:, self.dec_eos] = eos_prob
             next_beam = Beam(valid_size)
-            done_list, remain_list = next_beam.step(-log_prob.data, prev_beam, f_done)
+            done_list, remain_list = next_beam.step(-log_prob, prev_beam, f_done)
             hyp_list.extend(done_list)
             valid_size -= len(done_list)
 
             if valid_size == 0:
                 break
             
-            beam_remain_ix = Variable(src.data.new(remain_list))
+            beam_remain_ix = src.new_tensor(remain_list)
             enc_context = enc_context.index_select(0, beam_remain_ix)
             src_mask = src_mask.index_select(0, beam_remain_ix)
             hidden = hidden.index_select(0, beam_remain_ix)
@@ -167,9 +164,9 @@ class Seq2Seq(nn.Module):
             for k, (hyp, score) in enumerate(zip(hyp_list, score_list)):
                 if len(hyp) > 0:
                     score_list[k] = score_list[k] / len(hyp)
-        score = hidden.data.new(score_list)
+        score = hidden.new_tensor(score_list)
         sort_score, sort_ix = torch.sort(score)
         output = []
         for ix in sort_ix.tolist():
-            output.append((hyp_list[ix], score[ix]))
+            output.append((hyp_list[ix], score[ix].item()))
         return output

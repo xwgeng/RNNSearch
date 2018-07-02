@@ -22,7 +22,7 @@ parser.add_argument('--trg_max_len', type=int, default=50, help='maximum length 
 parser.add_argument('--test_src', type=str, help='source for testing')
 parser.add_argument('--test_trg', type=str, nargs='+', help='reference for testing')
 # model
-parser.add_argument('--model', type=str, default='FMTNMT', help='name of model')
+parser.add_argument('--model', type=str, help='name of model')
 parser.add_argument('--name', type=str, help='name of checkpoint')
 parser.add_argument('--enc_ninp', type=int, default=620, help='size of source word embedding')
 parser.add_argument('--dec_ninp', type=int, default=620, help='size of target word embedding')
@@ -54,6 +54,8 @@ opt.cuda = opt.cuda and torch.cuda.is_available()
 if opt.cuda:
     torch.cuda.manual_seed(opt.seed)
 
+device = torch.device('cuda' if opt.cuda else 'cpu')
+
 # load vocabulary for source and target
 src_vocab, trg_vocab = {}, {}
 src_vocab['stoi'] = load_vocab(opt.src_vocab)
@@ -76,9 +78,7 @@ test_dataset = dataset(opt.test_src, opt.test_trg)
 test_iter = torch.utils.data.DataLoader(test_dataset, 1, shuffle=False, collate_fn=lambda x: zip(*x))
 
 # create the model
-model = getattr(model, opt.model)(opt)
-if opt.cuda:
-    model.cuda()
+model = getattr(model, opt.model)(opt).to(device)
 
 state_dict = torch.load(os.path.join(opt.checkpoint, opt.name))
 model.load_state_dict(state_dict)
@@ -103,10 +103,7 @@ start_time = time.time()
 for ix, batch in enumerate(test_iter, start=1):
     src_raw = batch[0]
     trg_raw = batch[1:]
-    src, src_mask = convert_data(src_raw, src_vocab, True, UNK, PAD, SOS, EOS)
-    if opt.cuda:
-        src = src.cuda()
-        src_mask = src_mask.cuda()
+    src, src_mask = convert_data(src_raw, src_vocab, device, True, UNK, PAD, SOS, EOS)
     with torch.no_grad():
         output = model.beamsearch(src, src_mask, opt.beam_size, normalize=True)
         best_hyp, best_score = output[0]

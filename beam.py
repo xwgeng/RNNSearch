@@ -9,7 +9,7 @@ class Beam(object):
         self.scores = []
 
     def step(self, prob, prev_beam, f_done):
-        pre_score = prob.new(prev_beam.scores)
+        pre_score = prob.new_tensor(prev_beam.scores)
         score = prob + pre_score.unsqueeze(-1).expand_as(prob)
         nbest_score, nbest_ix = score.view(-1).topk(self.beam_size, largest=False)
         beam_ix = nbest_ix / prob.size(1)
@@ -17,7 +17,7 @@ class Beam(object):
 
         done_list, remain_list = [], []
         prev_candidates = prev_beam.candidates
-        for b_score, b_ix, t_ix in itertools.izip(nbest_score, beam_ix, token_ix):
+        for b_score, b_ix, t_ix in itertools.izip(nbest_score.tolist(), beam_ix.tolist(), token_ix.tolist()):
             candidate = prev_candidates[b_ix] + [t_ix]
 
             if f_done(candidate):

@@ -1,10 +1,9 @@
 import cPickle
 
 import torch
-from torch.autograd import Variable
 
 
-def convert_data(batch, vocab, reverse=False, unk=None, pad=None, sos=None, eos=None):
+def convert_data(batch, vocab, device, reverse=False, unk=None, pad=None, sos=None, eos=None):
     max_len = max(len(x) for x in batch)
     padded = []
     for x in batch:
@@ -20,8 +19,8 @@ def convert_data(batch, vocab, reverse=False, unk=None, pad=None, sos=None, eos=
                 ([] if eos is None else [eos]))
         padded[-1] = padded[-1] + [pad] * max(0, max_len - len(x))
         padded[-1] = map(lambda v: vocab['stoi'][v] if v in vocab['stoi'] else vocab['stoi'][unk], padded[-1])
-    padded = Variable(torch.LongTensor(padded))
-    mask = Variable(padded.data.ne(vocab['stoi'][pad]))
+    padded = torch.LongTensor(padded).to(device)
+    mask = padded.ne(vocab['stoi'][pad]).float()
     return padded, mask
 
 

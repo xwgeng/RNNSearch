@@ -26,4 +26,5 @@ valid_trg=${valid_trg_prefix}"0"\ ${valid_trg_prefix}"1"\ ${valid_trg_prefix}"2"
 
 eval_script=scripts/validate.sh
 
-python train.py --cuda --src_vocab ${src_vocab} --trg_vocab ${trg_vocab} --train_src ${train_src} --train_trg ${train_trg} --valid_src ${valid_src} --valid_trg ${valid_trg} --eval_script ${eval_script} --model ${model} --info ${info} --half_epoch --sfreq 50 --batch_size 80 
+python train.py --cuda --src_vocab ${src_vocab} --trg_vocab ${trg_vocab} --train_src ${train_src} --train_trg ${train_trg} --valid_src ${valid_src} --valid_trg ${valid_trg} --eval_script ${eval_script} --model ${model} --info ${info} --half_epoch --sfreq 50 --batch_size 80
+

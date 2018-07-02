@@ -5,7 +5,6 @@ import os
 import sys
 import tempfile
 import subprocess
-from collections import Counter, defaultdict
 
 import numpy as np
 
@@ -19,7 +18,7 @@ from dataset import dataset
 from util import convert_data, invert_vocab, load_vocab, convert_str, sort_batch
 
 import model
-from nltk.translate.bleu_score import corpus_bleu, sentence_bleu, SmoothingFunction
+from nltk.translate.bleu_score import corpus_bleu, SmoothingFunction
 
 parser = argparse.ArgumentParser(description='Training Attention-based Neural Machine Translation Model')
 # data
@@ -79,6 +78,8 @@ opt.cuda = opt.cuda and torch.cuda.is_available()
 if opt.cuda:
     torch.cuda.manual_seed(opt.seed)
 
+device = torch.device('cuda' if opt.cuda else 'cpu')
+
 # load vocabulary for source and target
 src_vocab, trg_vocab = {}, {}
 src_vocab['stoi'] = load_vocab(opt.src_vocab)
@@ -103,9 +104,7 @@ train_iter = torch.utils.data.DataLoader(train_dataset, opt.batch_size, shuffle=
 valid_iter = torch.utils.data.DataLoader(valid_dataset, 1, shuffle=False, collate_fn=lambda x: zip(*x))
 
 # create the model
-model = getattr(model, opt.model)(opt)
-if opt.cuda:
-    model.cuda()
+model = getattr(model, opt.model)(opt).to(device)
 
 # initialize the parameters
 for p in model.parameters():
@@ -159,28 +158,21 @@ def train(epoch):
         batch = sort_batch(batch)
         src_raw = batch[0]
         trg_raw = batch[1]
-        src, src_mask = convert_data(src_raw, src_vocab, True, UNK, PAD, SOS, EOS)
-        f_trg, f_trg_mask = convert_data(trg_raw, trg_vocab, False, UNK, PAD, SOS, EOS)
-        b_trg, b_trg_mask = convert_data(trg_raw, trg_vocab, True, UNK, PAD, SOS, EOS)
-        if opt.cuda:
-            src = src.cuda()
-            src_mask = src_mask.cuda()
-            f_trg = f_trg.cuda()
-            f_trg_mask = f_trg_mask.cuda()
-            b_trg = b_trg.cuda()
-            b_trg_mask = b_trg_mask.cuda()
+        src, src_mask = convert_data(src_raw, src_vocab, device, True, UNK, PAD, SOS, EOS)
+        f_trg, f_trg_mask = convert_data(trg_raw, trg_vocab, device, False, UNK, PAD, SOS, EOS)
+        b_trg, b_trg_mask = convert_data(trg_raw, trg_vocab, device, True, UNK, PAD, SOS, EOS)
         optimizer.zero_grad()
         if opt.cuda and torch.cuda.device_count() > 1:
             R = nn.parallel.data_parallel(model, (src, src_mask, f_trg, f_trg_mask, b_trg, b_trg_mask), range(torch.cuda.device_count()))
         else:
             R = model(src, src_mask, f_trg, f_trg_mask, b_trg, b_trg_mask)
         R[0].mean().backward()
-        grad_norm = torch.nn.utils.clip_grad_norm(param_list, opt.grad_clip)
+        grad_norm = torch.nn.utils.clip_grad_norm_(param_list, opt.grad_clip)
         optimizer.step()
         elapsed = time.time() - start_time
-        R = map(lambda x: str(x.mean().data[0]), R)
+        R = map(lambda x: str(x.mean().item()), R)
         print(epoch, batch_idx, len(train_iter), 100. * batch_idx / len(train_iter),
-              ' '.join(R), grad_norm, opt.cur_lr, elapsed)
+              ' '.join(R), grad_norm.item(), opt.cur_lr, elapsed)
 
         # validation
         if batch_idx % opt.vfreq == 0:
@@ -205,10 +197,7 @@ def train(epoch):
             ix = np.random.randint(0, length)
             samp_src_raw = [src_raw[ix]]
             samp_trg_raw = [trg_raw[ix]]
-            samp_src, samp_src_mask = convert_data(samp_src_raw, src_vocab, True, UNK, PAD, SOS, EOS)
-            if opt.cuda:
-                samp_src = samp_src.cuda()
-                samp_src_mask = samp_src_mask.cuda()
+            samp_src, samp_src_mask = convert_data(samp_src_raw, src_vocab, device, True, UNK, PAD, SOS, EOS)
             model.eval()
             with torch.no_grad():
                 output = model.beamsearch(samp_src, samp_src_mask, opt.beam_size)
@@ -247,10 +236,7 @@ def evaluate(batch_idx, epoch):
     for ix, batch in enumerate(valid_iter, start=1):
         src_raw = batch[0]
         trg_raw = batch[1:]
-        src, src_mask = convert_data(src_raw, src_vocab, True, UNK, PAD, SOS, EOS)
-        if opt.cuda:
-            src = src.cuda()
-            src_mask = src_mask.cuda()
+        src, src_mask = convert_data(src_raw, src_vocab, device, True, UNK, PAD, SOS, EOS)
         with torch.no_grad():
             output = model.beamsearch(src, src_mask, opt.beam_size, normalize=True)
             best_hyp, best_score = output[0]
@@ -267,7 +253,7 @@ def evaluate(batch_idx, epoch):
     f_tmp.close()
     bleu2 = bleu_script(p_tmp)
     print('BLEU score for {}-{} is {}/{}, {}'.format(epoch, batch_idx, bleu1, bleu2, elapsed))
-        opt.score_list.append((bleu2, batch_idx, epoch))
+    opt.score_list.append((bleu2, batch_idx, epoch))
 
 
 for epoch in xrange(opt.epoch, opt.epoch + opt.nepoch):
