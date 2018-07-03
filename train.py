@@ -64,6 +64,7 @@ parser.add_argument('--checkpoint', type=str, default='./checkpoint/', help='pat
 parser.add_argument('--freq', type=int, help='frequency for save')
 # GPU
 parser.add_argument('--cuda', action='store_true', help='use cuda')
+parser.add_argument('--local_rank', type=int, help='use cuda')
 # Misc
 parser.add_argument('--nepoch', type=int, default=6, help='number of epochs to train')
 parser.add_argument('--epoch', type=int, default=0, help='epoch of checkpoint')
@@ -73,13 +74,20 @@ opt = parser.parse_args()
 print(opt)
 
 # set the random seed manually
+if opt.local_rank:
+    opt.seed += opt.local_rank
 torch.manual_seed(opt.seed)
 
 opt.cuda = opt.cuda and torch.cuda.is_available()
 if opt.cuda:
     torch.cuda.manual_seed(opt.seed)
 
-device = torch.device('cuda' if opt.cuda else 'cpu')
+device_type= 'cuda' if opt.cuda else 'cpu'
+device_ids = None
+if opt.local_rank is not None:
+    device_type += ':' + str(opt.local_rank)
+    device_ids = [opt.local_rank]
+device = torch.device(device_type)
 
 # load vocabulary for source and target
 src_vocab, trg_vocab = {}, {}
@@ -163,8 +171,8 @@ def train(epoch):
         f_trg, f_trg_mask = convert_data(trg_raw, trg_vocab, device, False, UNK, PAD, SOS, EOS)
         b_trg, b_trg_mask = convert_data(trg_raw, trg_vocab, device, True, UNK, PAD, SOS, EOS)
         optimizer.zero_grad()
-        if opt.cuda and torch.cuda.device_count() > 1:
-            R = nn.parallel.data_parallel(model, (src, src_mask, f_trg, f_trg_mask, b_trg, b_trg_mask), range(torch.cuda.device_count()))
+        if opt.cuda and torch.cuda.device_count() > 1 and opt.local_rank is None:
+            R = nn.parallel.data_parallel(model, (src, src_mask, f_trg, f_trg_mask, b_trg, b_trg_mask), device_ids)
         else:
             R = model(src, src_mask, f_trg, f_trg_mask, b_trg, b_trg_mask)
         R[0].mean().backward()
