@@ -156,7 +156,7 @@ class RNNSearch(nn.Module):
             
             beam_remain_ix = src.new_tensor(remain_list)
             enc_context = enc_context.index_select(0, beam_remain_ix)
-            src_mask = src_mask.index_select(0, beam_remain_ix)
+            attn_mask = attn_mask.index_select(0, beam_remain_ix)
             hidden = hidden.index_select(0, beam_remain_ix)
             prev_beam = next_beam
         score_list = [hyp[1] for hyp in hyp_list]

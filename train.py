@@ -70,6 +70,7 @@ parser.add_argument('--epoch', type=int, default=0, help='epoch of checkpoint')
 parser.add_argument('--info', type=str, help='info of model')
 
 opt = parser.parse_args()
+print(opt)
 
 # set the random seed manually
 torch.manual_seed(opt.seed)
