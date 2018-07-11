@@ -106,10 +106,10 @@ def create_dictionary(name, lim=0):
 
     combined_counter = global_counter
 
-    if lim <= 2:
-        lim = len(combined_counter) + 2
+    if lim <= 4:
+        lim = len(combined_counter) + 4
 
-    vocab_count = combined_counter.most_common(lim - 2)
+    vocab_count = combined_counter.most_common(lim - 4)
     total_counts = sum(combined_counter.values())
     print 100.0 * sum([count for word, count in vocab_count]) / total_counts
 
