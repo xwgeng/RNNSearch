@@ -4,6 +4,7 @@ import time
 import os
 import sys
 import subprocess
+import tempfile
 
 import torch.utils.data
 
@@ -21,6 +22,7 @@ parser.add_argument('--src_max_len', type=int, default=50, help='maximum length 
 parser.add_argument('--trg_max_len', type=int, default=50, help='maximum length of target')
 parser.add_argument('--test_src', type=str, help='source for testing')
 parser.add_argument('--test_trg', type=str, nargs='+', help='reference for testing')
+parser.add_argument('--eval_script', type=str, help='script for validation')
 # model
 parser.add_argument('--model', type=str, help='name of model')
 parser.add_argument('--name', type=str, help='name of checkpoint')
@@ -86,7 +88,7 @@ model.eval()
 
 
 def bleu_script(f):
-    ref_stem = opt.valid_trg[0][:-1] + '*'
+    ref_stem = opt.test_trg[0][:-1] + '*'
     cmd = '{eval_script} {refs} {hyp}'.format(eval_script=opt.eval_script, refs=ref_stem, hyp=f)
     p = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = p.communicate()
@@ -111,13 +113,13 @@ for ix, batch in enumerate(test_iter, start=1):
         hyp_list.append(best_hyp[0])
         ref = map(lambda x: x[0], trg_raw)
         ref_list.append(ref)
+    print(ix, len(test_iter), 100. * ix / len(test_iter))
 elapsed = time.time() - start_time
 bleu1 = corpus_bleu(ref_list, hyp_list, smoothing_function=SmoothingFunction().method1)
 hyp_list = map(lambda x: ' '.join(x), hyp_list)
-name = opt.name.replace('pt', 'beam') + '.' + opt.info
-p_pred = os.path.join(opt.save, name)
-f_pred = open(p_pred, 'w')
-f_pred.write('\n'.join(hyp_list))
-f_pred.close()
-bleu2 = bleu_script(p_pred)
+p_tmp = tempfile.mktemp()
+f_tmp = open(p_tmp, 'w')
+f_tmp.write('\n'.join(hyp_list))
+f_tmp.close()
+bleu2 = bleu_script(p_tmp)
 print('BLEU score for model {} is {}/{}, {}'.format(opt.name, bleu1, bleu2, elapsed))
